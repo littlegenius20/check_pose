@@ -1,0 +1,112 @@
+<html>
+    <head>
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
+        <style>
+            .topic {
+                width: 100%;
+                margin: 0 auto;
+                padding: 10px;
+                text-align: center;
+                background: #CD5C5C;
+                color: white;
+                font-size: 20px;
+            }
+            .canvas {
+                display: none;
+            }
+            .keypoints {
+                font-size: 14px;
+            }
+        </style>
+    </head>
+    <body>
+        <section class="zone">
+            <div class="topic">Prediction of Standing/Sitting/Fell down</div>
+            <table>
+                <tr>
+                    <td>
+                        <div id='photo1'>
+                            <canvas id="canvas1" class="canvas"></canvas>
+                            <img id='sample1' src='./images/stand3.jpg '/>
+                        </div>
+                    </td>
+                    <td>
+                        <div id='keypoints1' class="keypoints"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div id='photo2'>
+                            <canvas id="canvas2" class="canvas"></canvas>
+                            <img id='sample2' src='./images/sit3.jpg '/>
+                        </div>
+                    </td>
+                    <td>
+                        <div id='keypoints2' class="keypoints"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div id='photo3'>
+                            <canvas id="canvas3" class="canvas"></canvas>
+                            <img id='sample3' src='./images/laydown3.jpg '/>
+                        </div>
+                    </td>
+                    <td>
+                        <div id='keypoints3' class="keypoints"></div>
+                    </td>
+                </tr>
+            </table>
+        </section>
+    </body>
+    <script>
+        const sample1 = document.getElementById('sample1');
+        const sample2 = document.getElementById('sample2');
+        const sample3 = document.getElementById('sample3');
+        const keypoints1 = document.getElementById('keypoints1');
+        const keypoints2 = document.getElementById('keypoints2');
+        const keypoints3 = document.getElementById('keypoints3');
+        var rightankle2righthip;
+        var rightankle2nose;
+        var poserate;
+        async function startup() {
+            for (k=0; k<3; k++) {
+                switch(k) {
+                    case 0:
+                        samplex = sample1;
+                        keypointsx = keypoints1;
+                        break;
+                    case 1:
+                        samplex = sample2;
+                        keypointsx = keypoints2;
+                        break;
+                    case 2:
+                        samplex = sample3;
+                        keypointsx = keypoints3;
+                        break;
+                }
+                await posenet.load().then(function(net){
+                    return net.estimateSinglePose(samplex, {
+                    architecture: 'MobileNetV1',
+                    outputStride: 16,
+                    multiplier: 0.75})
+                }).then(function(pose){
+                    righthip2nose = pose.keypoints[12].position.y - pose.keypoints[0].position.y;
+                    rightknee2righthip = pose.keypoints[14].position.y - pose.keypoints[12].position.y;
+                    poserate = rightknee2righthip/righthip2nose;
+                    rightankle2nose = pose.keypoints[16].position.y - pose.keypoints[0].position.y;
+                    keypointsx.style.marginTop=pose.keypoints[1].position.y
+                    if (poserate>0.55) {
+                        keypointsx.innerText="Standing";
+                    } else if (poserate>0.2 && poserate<=0.55) {
+                        keypointsx.innerText="sitting";
+                    } else {
+                        keypointsx.innerText="Fell down";
+                    }
+                })
+            }
+        }
+        window.addEventListener('load', startup, false);
+    </script>
+</html>
